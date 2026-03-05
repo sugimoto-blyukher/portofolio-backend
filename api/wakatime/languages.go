@@ -30,9 +30,24 @@ func parseDate(s string) (time.Time, error) { return time.Parse("2006-01-02", s)
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	// CORS（とりあえず動かす用。本番は Origin を自ドメインに固定しろ）
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	allowed := map[string]bool{
+		"https://sinta.fun":     true,
+		"http://localhost:4321": true, // 開発用（Astro）
+	}
+
+	origin := r.Header.Get("Origin")
+	w.Header().Set("Vary", "Origin")
+
+	if origin != "" && allowed[origin] {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Max-Age", "86400") // preflightキャッシュ
+	} else if origin != "" {
+		http.Error(w, "forbidden origin", http.StatusForbidden)
+		return
+	}
+
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(204)
 		return
