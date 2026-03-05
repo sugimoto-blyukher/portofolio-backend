@@ -1,5 +1,3 @@
-package wakatime
-
 package handler
 
 import (
